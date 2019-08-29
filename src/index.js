@@ -1,11 +1,52 @@
 import { GraphQLServer } from "graphql-yoga";
 // String, Boolean, Int, Float, ID
 
+const users = [
+  {
+    id: "1",
+    name: "Brian Cooney",
+    email: "brian@gmail.com"
+  },
+  {
+    id: "2",
+    name: "Sarah",
+    email: "sarah@gmail.com"
+  },
+  {
+    id: "3",
+    name: "Jack",
+    email: "jack@gmail.com"
+  }
+];
+
+const posts = [
+  {
+    id: "1",
+    title: "Why do we care so much about...",
+    body:
+      "And there were so many left on the field when john came back to pick up the..",
+    published: true
+  },
+  {
+    id: "2",
+    title: "Why do we care so much about...",
+    body:
+      "And there were so many left on the field when john came back to pick up the..",
+    published: false
+  },
+  {
+    id: "3",
+    title: "Why do we care so much about...",
+    body:
+      "And there were so many left on the field when john came back to pick up the..",
+    published: true
+  }
+];
+
 const typeDefs = `
     type Query {
-        add(numbers: [Float]!): Float!
-        grades: [Int!]!
-        greeting(name: String, position: String!): String!
+        posts(query: String): [Post!]!
+        users(query: String): [User!]!
         me: User!
         post: Post!
     }
@@ -26,23 +67,25 @@ const typeDefs = `
 
 const resolvers = {
   Query: {
-    add(parent, args, ctx, info) {
-      if (args.numbers.length === 0) {
-        return 0;
+    users(parent, args, ctx, info) {
+      if (!args.query) {
+        return users;
       }
-      return args.numbers.reduce((accumulator, currentValue) => {
-        return accumulator + currentValue;
+      return users.filter(user => {
+        return user.name
+          .toLocaleLowerCase()
+          .includes(args.query.toLocaleLowerCase());
       });
     },
-    greeting(parent, args, ctx, info) {
-      if (args.name) {
-        return `hello, ${args.name}! you are my favourite ${args.position}`;
-      } else {
-        return "args";
+    posts(parent, args, ctx, info) {
+      if (!args.query) {
+        return posts;
       }
-    },
-    grades(parent, args, ctx, info) {
-      return [99, 33, 58, 45];
+      return posts.filter(post => {
+        return post.title
+          .toLocaleLowerCase()
+          .includes(args.query.toLocaleLowerCase());
+      });
     },
     me() {
       return {
