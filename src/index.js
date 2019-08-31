@@ -1,143 +1,181 @@
 import { GraphQLServer } from "graphql-yoga";
-// String, Boolean, Int, Float, ID
+import uuidv4 from "uuid/v4";
 
+// Scalar types - String, Boolean, Int, Float, ID
+
+// Demo user data
 const users = [
   {
     id: "1",
-    name: "Brian Cooney",
-    email: "brian@gmail.com"
+    name: "Andrew",
+    email: "andrew@example.com",
+    age: 27
   },
   {
     id: "2",
     name: "Sarah",
-    email: "sarah@gmail.com"
+    email: "sarah@example.com"
   },
   {
     id: "3",
-    name: "Jack",
-    email: "jack@gmail.com"
+    name: "Mike",
+    email: "mike@example.com"
   }
 ];
 
 const posts = [
   {
-    id: "1",
-    title: "Why do we care so much about...",
-    body:
-      "And there were so many left on the field when john came back to pick up the..",
+    id: "10",
+    title: "GraphQL 101",
+    body: "This is how to use GraphQL...",
     published: true,
     author: "1"
   },
   {
-    id: "2",
-    title: "Why do we care so much about...",
-    body:
-      "And there were so many left on the field when john came back to pick up the..",
+    id: "11",
+    title: "GraphQL 201",
+    body: "This is an advanced GraphQL post...",
     published: false,
     author: "1"
   },
   {
-    id: "3",
-    title: "Why do we care so much about...",
-    body:
-      "And there were so many left on the field when john came back to pick up the..",
-    published: true,
-    author: "3"
+    id: "12",
+    title: "Programming Music",
+    body: "",
+    published: false,
+    author: "2"
   }
 ];
 
 const comments = [
   {
-    id: "5",
-    text: "He has a point but I would suggest you read more on ...."
+    id: "102",
+    text: "This worked well for me. Thanks!",
+    author: "3",
+    post: "10"
   },
   {
-    id: "6",
-    text:
-      "On Saturday I will go to the stoke newignton library and study graphQL"
+    id: "103",
+    text: "Glad you enjoyed it.",
+    author: "1",
+    post: "10"
   },
   {
-    id: "7",
-    text: "On Saturday evening, I will meet Deirdre for drinks"
+    id: "104",
+    text: "This did no work.",
+    author: "2",
+    post: "11"
   },
   {
-    id: "8",
-    text: "On Saturday evening, I will meet Deirdre for drinks"
+    id: "105",
+    text: "Nevermind. I got it to work.",
+    author: "1",
+    post: "11"
   }
 ];
 
+// Type definitions (schema)
 const typeDefs = `
     type Query {
-        posts(query: String): [Post!]!
         users(query: String): [User!]!
+        posts(query: String): [Post!]!
+        comments: [Comment!]!
         me: User!
         post: Post!
-        comments: [Comment!]!
+    }
+
+    type Mutation {
+      createUser(name: String!, email: String!, age: Int): User! 
     }
 
     type User {
         id: ID!
         name: String!
-        email: String
+        email: String!
         age: Int
-        posts: [Post!]! 
+        posts: [Post!]!
+        comments: [Comment!]!
     }
+
     type Post {
         id: ID!
         title: String!
         body: String!
         published: Boolean!
         author: User!
+        comments: [Comment!]!
     }
+
     type Comment {
-      id: ID!
-      text: String!
+        id: ID!
+        text: String!
+        author: User!
+        post: Post!
     }
 `;
 
+// Resolvers
 const resolvers = {
   Query: {
     users(parent, args, ctx, info) {
       if (!args.query) {
         return users;
       }
+
       return users.filter(user => {
-        return user.name
-          .toLocaleLowerCase()
-          .includes(args.query.toLocaleLowerCase());
+        return user.name.toLowerCase().includes(args.query.toLowerCase());
       });
     },
     posts(parent, args, ctx, info) {
       if (!args.query) {
         return posts;
       }
+
       return posts.filter(post => {
-        return post.title
-          .toLocaleLowerCase()
-          .includes(args.query.toLocaleLowerCase());
+        const isTitleMatch = post.title
+          .toLowerCase()
+          .includes(args.query.toLowerCase());
+        const isBodyMatch = post.body
+          .toLowerCase()
+          .includes(args.query.toLowerCase());
+        return isTitleMatch || isBodyMatch;
       });
+    },
+    comments(parent, args, ctx, info) {
+      return comments;
     },
     me() {
       return {
-        id: "234qrwqe",
+        id: "123098",
         name: "Mike",
-        email: "Mike@gmail.com",
-        age: 32
+        email: "mike@example.com"
       };
     },
     post() {
       return {
-        id: "234qrwqe",
-        title: "How to get ahead",
-        body:
-          "Marketing examples dot com provided weekly growth hacking tips into your inbox",
-        published: "23-2-19"
+        id: "092",
+        title: "GraphQL 101",
+        body: "",
+        published: false
       };
-    },
-    comments(parent, args, ctx, info) {
-      if (!args.query) {
-        return comments;
+    }
+  },
+  Mutation: {
+    createUser(parent, args, ctx, info) {
+      console.log(args);
+      const emailTaken = users.some(user => user.email === args.email);
+
+      if (emailTaken) {
+        throw new Error("email is taken");
       }
+      const user = {
+        id: uuidv4(),
+        name: args.name,
+        email: args.email,
+        age: args.age
+      };
+      users.push(user);
+      return user;
     }
   },
   Post: {
@@ -145,12 +183,34 @@ const resolvers = {
       return users.find(user => {
         return user.id === parent.author;
       });
+    },
+    comments(parent, args, ctx, info) {
+      return comments.filter(comment => {
+        return comment.post === parent.id;
+      });
+    }
+  },
+  Comment: {
+    author(parent, args, ctx, info) {
+      return users.find(user => {
+        return user.id === parent.author;
+      });
+    },
+    post(parent, args, ctx, info) {
+      return posts.find(post => {
+        return post.id === parent.post;
+      });
     }
   },
   User: {
     posts(parent, args, ctx, info) {
       return posts.filter(post => {
         return post.author === parent.id;
+      });
+    },
+    comments(parent, args, ctx, info) {
+      return comments.filter(comment => {
+        return comment.author === parent.id;
       });
     }
   }
@@ -162,5 +222,5 @@ const server = new GraphQLServer({
 });
 
 server.start(() => {
-  console.log("the server is up");
+  console.log("The server is up!");
 });
