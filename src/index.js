@@ -25,21 +25,24 @@ const posts = [
     title: "Why do we care so much about...",
     body:
       "And there were so many left on the field when john came back to pick up the..",
-    published: true
+    published: true,
+    author: "1"
   },
   {
     id: "2",
     title: "Why do we care so much about...",
     body:
       "And there were so many left on the field when john came back to pick up the..",
-    published: false
+    published: false,
+    author: "1"
   },
   {
     id: "3",
     title: "Why do we care so much about...",
     body:
       "And there were so many left on the field when john came back to pick up the..",
-    published: true
+    published: true,
+    author: "3"
   }
 ];
 
@@ -61,7 +64,8 @@ const typeDefs = `
         id: ID!
         title: String!
         body: String!
-        published: String!
+        published: Boolean!
+        author: User!
     }
 `;
 
@@ -103,6 +107,13 @@ const resolvers = {
           "Marketing examples dot com provided weekly growth hacking tips into your inbox",
         published: "23-2-19"
       };
+    }
+  },
+  Post: {
+    author(parent, args, ctx, info) {
+      return users.find(user => {
+        return user.id === parent.author;
+      });
     }
   }
 };
