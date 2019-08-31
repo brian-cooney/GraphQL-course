@@ -46,12 +46,33 @@ const posts = [
   }
 ];
 
+const comments = [
+  {
+    id: "5",
+    text: "He has a point but I would suggest you read more on ...."
+  },
+  {
+    id: "6",
+    text:
+      "On Saturday I will go to the stoke newignton library and study graphQL"
+  },
+  {
+    id: "7",
+    text: "On Saturday evening, I will meet Deirdre for drinks"
+  },
+  {
+    id: "8",
+    text: "On Saturday evening, I will meet Deirdre for drinks"
+  }
+];
+
 const typeDefs = `
     type Query {
         posts(query: String): [Post!]!
         users(query: String): [User!]!
         me: User!
         post: Post!
+        comments: [Comment!]!
     }
 
     type User {
@@ -59,6 +80,7 @@ const typeDefs = `
         name: String!
         email: String
         age: Int
+        posts: [Post!]! 
     }
     type Post {
         id: ID!
@@ -66,6 +88,10 @@ const typeDefs = `
         body: String!
         published: Boolean!
         author: User!
+    }
+    type Comment {
+      id: ID!
+      text: String!
     }
 `;
 
@@ -107,12 +133,24 @@ const resolvers = {
           "Marketing examples dot com provided weekly growth hacking tips into your inbox",
         published: "23-2-19"
       };
+    },
+    comments(parent, args, ctx, info) {
+      if (!args.query) {
+        return comments;
+      }
     }
   },
   Post: {
     author(parent, args, ctx, info) {
       return users.find(user => {
         return user.id === parent.author;
+      });
+    }
+  },
+  User: {
+    posts(parent, args, ctx, info) {
+      return posts.filter(post => {
+        return post.author === parent.id;
       });
     }
   }
